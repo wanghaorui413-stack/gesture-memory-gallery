@@ -7,6 +7,11 @@
       name="description"
       content="A gesture-driven 3D memory gallery built with Three.js, MediaPipe, and browser-side image storage."
     />
+    <script>
+      if (window.location.protocol === 'file:') {
+        window.location.replace(new URL('Cake.html', window.location.href).href);
+      }
+    </script>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23050505'/%3E%3Cpath d='M17 38c5-15 25-15 30 0' fill='none' stroke='%23d4af37' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='29' r='5' fill='%23ff69b4'/%3E%3Ccircle cx='40' cy='29' r='5' fill='%2325d0b0'/%3E%3C/svg%3E" />
     <title>Gesture Memory Gallery</title>
   </head>

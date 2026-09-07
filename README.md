@@ -39,7 +39,10 @@ Mobile view:
 
 ```text
 gesture-memory-gallery/
+  Cake.html
   index.html
+  scripts/
+    export-standalone.mjs
   src/
     main.js
     config.js
@@ -57,6 +60,20 @@ gesture-memory-gallery/
 
 ## Run Locally
 
+### Direct Open
+
+For a simple demo, open `Cake.html` directly in a browser. If you open `index.html` from the file system, it redirects to `Cake.html`.
+
+The direct-open file is generated from the production build:
+
+```bash
+npm run export:standalone
+```
+
+If `index.html` is opened directly and appears as plain unstyled text, it means the browser is reading the Vite development entry without the Vite server. Use `Cake.html` for direct opening, or use development mode below.
+
+### Development Mode
+
 ```bash
 npm install
 npm run dev
@@ -67,8 +84,6 @@ Then open the local URL printed by Vite, usually:
 ```text
 http://127.0.0.1:5178/
 ```
-
-Do not open `index.html` directly from the file system. The app uses JavaScript modules and third-party packages, so it should be served through Vite.
 
 Camera access requires a secure context or localhost. If no camera is available, the app still shows the 3D scene and upload controls, while gesture control is disabled.
 
