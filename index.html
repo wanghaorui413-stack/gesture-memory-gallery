@@ -1,64 +1,102 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="A gesture-driven 3D memory gallery built with Three.js, MediaPipe, and browser-side image storage."
-    />
+    <meta name="description" content="一份可以直接打开的生日礼物：蛋糕、星光和我们的照片。" />
     <script>
-      if (window.location.protocol === 'file:') {
-        window.location.replace(new URL('Cake.html', window.location.href).href);
+      if (window.location.protocol === 'file:' && window.location.pathname.endsWith('/index.html')) {
+        window.location.replace(new URL('Cake.html?make=1', window.location.href).href);
       }
     </script>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23050505'/%3E%3Cpath d='M17 38c5-15 25-15 30 0' fill='none' stroke='%23d4af37' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='29' r='5' fill='%23ff69b4'/%3E%3Ccircle cx='40' cy='29' r='5' fill='%2325d0b0'/%3E%3C/svg%3E" />
-    <title>Gesture Memory Gallery</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23120b1d'/%3E%3Cpath d='M12 40h40v9H12z' fill='%23ff98bc'/%3E%3Cpath d='M18 30h28v10H18z' fill='%23fff0dc'/%3E%3Cpath d='M32 15v15' stroke='%23ffd9a8' stroke-width='3'/%3E%3Cpath d='M32 11c-5 6 5 9 0 13 8-5 7-10 0-13z' fill='%23ffb45a'/%3E%3C/svg%3E" />
+    <title>送给你的生日蛋糕 ✨</title>
   </head>
   <body>
-    <div id="app-root">
-      <section id="loader" class="overlay">
-        <div class="spinner" aria-hidden="true"></div>
-        <p>Preparing interactive scene</p>
-      </section>
+    <section id="loader" class="overlay loader">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>正在点亮生日星光…</p>
+    </section>
 
-      <section id="start-screen" class="overlay start-screen">
-        <p class="eyebrow">WebGL + MediaPipe demo</p>
-        <h1>Gesture Memory Gallery</h1>
-        <button id="start-button" class="primary-button" type="button">Start Experience</button>
-        <div id="countdown-display" aria-live="polite"></div>
-      </section>
+    <section id="start-screen" class="overlay start-screen">
+      <div class="start-decoration" aria-hidden="true">✦　♡　✧　♡　✦</div>
+      <p class="eyebrow">a little birthday magic</p>
+      <h1>妹妹生日快乐！</h1>
+      <p class="start-copy">希望你<br />天天开心。</p>
+      <button id="start-button" class="primary-button" type="button">打开这份礼物 ✨</button>
+      <div id="countdown-display" aria-live="polite"></div>
+    </section>
 
-      <main id="ui-container" class="ui-layer">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">Interactive 3D keepsake</p>
-            <h2>Gesture Memory Gallery</h2>
-          </div>
-          <button id="toggle-help" class="icon-button" type="button" aria-label="Toggle tips">?</button>
-        </header>
-
-        <aside id="tips-panel" class="tips-panel">
-          <strong>Controls</strong>
-          <span>Left hand open: scatter view</span>
-          <span>Left hand closed: cake view</span>
-          <span>Right hand pinch: focus nearest photo</span>
-          <span>Right hand swipe inward: rotate gallery</span>
-        </aside>
-
-        <div class="upload-wrapper">
-          <button id="upload-button" class="secondary-button" type="button">Add Memories</button>
-          <input id="file-input" type="file" accept="image/*" multiple />
-          <button id="clear-button" class="quiet-button" type="button">Clear Photos</button>
-          <p>Photos stay in this browser through localStorage.</p>
+    <main id="ui-container" class="ui-layer">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">made with love ♡</p>
+          <p class="topbar-subtitle">Cyber Birthday Cake only for you</p>
+          <h2>给你的生日蛋糕</h2>
+          <p id="photo-count" class="photo-count"></p>
+          <p class="maker-hint">制作模式 · 选好照片后点“保存礼物文件”</p>
         </div>
+        <button id="toggle-help" class="icon-button" type="button" aria-label="显示操作说明">?</button>
+      </header>
 
-        <section id="camera-card" class="camera-card" aria-label="Hand tracking preview">
-          <video id="webcam" autoplay playsinline muted></video>
-          <canvas id="output-canvas"></canvas>
-        </section>
-      </main>
-    </div>
+      <aside id="tips-panel" class="tips-panel tips-panel--hidden">
+        <strong>一起玩吧 ✨</strong>
+        <span>点下方按钮，或在画面上左右拖动</span>
+        <span>开启手势后：张开手散开，握拳变回蛋糕</span>
+        <span>移动手掌选择照片，捏住拇指和食指放大高亮的照片</span>
+        <span>手势提示会显示当前选中的是第几张照片</span>
+        <span>手在镜头前左右移动，也能转动蛋糕</span>
+        <span>照片可用左右箭头切换，或点“总览”直接挑选；Esc 返回</span>
+        <small>手势识别首次开启需要联网并允许使用摄像头。</small>
+      </aside>
+
+      <div class="controls">
+        <div class="mode-controls">
+          <button id="cake-button" class="secondary-button" type="button">🎂 蛋糕</button>
+          <button id="scatter-button" class="secondary-button" type="button">✨ 星光</button>
+          <button id="prev-button" class="round-button" type="button" aria-label="上一张照片">‹</button>
+          <button id="focus-button" class="secondary-button" type="button">💗 看照片</button>
+          <button id="next-button" class="round-button" type="button" aria-label="下一张照片">›</button>
+          <button id="overview-button" class="secondary-button" type="button">▦ 总览</button>
+          <button id="camera-button" class="quiet-button" type="button">开启手势</button>
+          <button id="music-button" class="quiet-button" type="button">♫ 选择《淡想》</button>
+          <button id="photo-tools-button" class="quiet-button" type="button" aria-controls="gift-controls" aria-expanded="false">管理照片</button>
+        </div>
+        <p id="status" role="status">拖动画面看看，也可以开启手势互动</p>
+        <div id="gift-controls" class="gift-controls">
+          <button id="upload-button" class="quiet-button" type="button">加入照片</button>
+          <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
+          <button id="clear-button" class="quiet-button" type="button">清空当前照片</button>
+          <button id="restore-button" class="quiet-button" type="button" hidden>恢复内置照片</button>
+          <button id="audio-upload-button" class="quiet-button" type="button">选择音乐文件</button>
+          <input id="audio-file-input" type="file" accept="audio/mpeg,audio/mp4,audio/wav,.mp3,.m4a,.wav" />
+          <button id="download-button" class="gift-button maker-only" type="button">保存礼物文件 ↗</button>
+        </div>
+      </div>
+
+      <section id="gallery-overlay" class="gallery-overlay" hidden aria-label="照片总览">
+        <div class="gallery-dialog">
+          <div class="gallery-heading">
+            <div>
+              <p class="eyebrow">our memories</p>
+              <h3>照片总览</h3>
+            </div>
+            <button id="close-overview" class="icon-button" type="button" aria-label="关闭照片总览">×</button>
+          </div>
+          <div id="gallery-grid" class="gallery-grid"></div>
+        </div>
+      </section>
+
+      <div id="gesture-cursor" class="gesture-cursor" hidden aria-hidden="true"><span></span></div>
+
+      <section id="camera-card" class="camera-card" aria-label="手势识别画面">
+        <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="output-canvas"></canvas>
+      </section>
+    </main>
+    <script id="gift-data" type="application/json">[]</script>
+    <script id="gift-audio" type="application/json">{}</script>
+    <audio id="bgm" loop preload="none"></audio>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

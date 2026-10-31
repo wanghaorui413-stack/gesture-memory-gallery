@@ -1,113 +1,27 @@
-# Gesture Memory Gallery
+# 送给妹妹的生日蛋糕
 
-Gesture Memory Gallery is a browser-based interactive keepsake app. It turns uploaded photos into a 3D memory gallery, then lets users switch views, rotate the scene, and focus photos through hand gestures.
+这是生日蛋糕的源代码。私人照片和生成的礼物文件只保存在本地，不上传到这个公开仓库。电脑和手机可以用按钮或拖动浏览照片；“总览”能一次看到所有照片。
 
-The original idea came from a personalized birthday greeting page. This version is organized as a recruiting-ready small project: the private celebration context is separated from the reusable technical design, so the project can be discussed as a WebGL interaction prototype.
+## 发送和更换照片
 
-## Preview
+- 在本地运行下方打包命令，双击生成的 `Cake.html`。选好照片后点“管理照片”可加入、清空或恢复内置照片；操作不会删除原相册文件。
+- 制作好的 `送给妹妹-生日蛋糕.html` 可以直接发给收礼人，双击就能看。
+- 在制作模式点“保存礼物文件 ↗”，浏览器会下载新的 `送给妹妹-生日蛋糕.html`。这个单文件会带上当时选好的照片和已选的音乐。
 
-Desktop view:
+没有提供音乐文件时，页面里的“选择《淡想》”会打开本地文件选择器。要将**周童《淡想》**真正内置到发送版，请在制作模式点“管理照片 → 选择音乐文件”，选择可用的 MP3、M4A 或 WAV，再保存礼物文件。浏览器会在点击“打开这份礼物”后尝试播放，音乐按钮可暂停或继续。
 
-![Desktop preview](docs/assets/preview-desktop.png)
+## 操作
 
-Mobile view:
+- “蛋糕 / 星光”切换场景；“看照片”和左右箭头逐张浏览；“总览”直接挑一张照片。
+- 在蛋糕画面左右拖动可以旋转，手机也支持触屏拖动。
+- 点“开启手势”并允许摄像头后，张开手散开照片，握拳回到蛋糕。移动手掌让光标指向想看的照片，捏合拇指和食指放大；左右移动手掌可转动场景。
+- 手势识别首次加载需要联网。照片、场景和手动操作无需摄像头。
 
-![Mobile preview](docs/assets/preview-mobile.png)
-
-## Features
-
-- 3D particle scene built with Three.js.
-- Cake, scatter, and photo-focus interaction modes.
-- MediaPipe HandLandmarker integration for browser-side gesture recognition.
-- Left-hand open/closed gesture for mode switching.
-- Right-hand pinch gesture for nearest-photo focus.
-- Right-hand inward swipe gesture for gallery rotation.
-- Multi-image upload with Canvas compression.
-- localStorage persistence, keeping photos in the user's browser instead of uploading them to a server.
-- Responsive overlay controls and camera preview.
-
-## Tech Stack
-
-- Vite
-- Three.js
-- MediaPipe Tasks Vision
-- Vanilla JavaScript modules
-- Canvas API
-- localStorage
-
-## Project Structure
-
-```text
-gesture-memory-gallery/
-  Cake.html
-  index.html
-  scripts/
-    export-standalone.mjs
-  src/
-    main.js
-    config.js
-    styles.css
-    scene/
-      Experience.js
-      Particle.js
-    storage/
-      photoStorage.js
-    vision/
-      HandGestureController.js
-  docs/
-    recruiting-positioning.md
-```
-
-## Run Locally
-
-### Direct Open
-
-For a simple demo, open `Cake.html` directly in a browser. If you open `index.html` from the file system, it redirects to `Cake.html`.
-
-The direct-open file is generated from the production build:
-
-```bash
-npm run export:standalone
-```
-
-If `index.html` is opened directly and appears as plain unstyled text, it means the browser is reading the Vite development entry without the Vite server. Use `Cake.html` for direct opening, or use development mode below.
-
-### Development Mode
+## 开发与重新打包
 
 ```bash
 npm install
-npm run dev
+npm run export:standalone
 ```
 
-Then open the local URL printed by Vite, usually:
-
-```text
-http://127.0.0.1:5178/
-```
-
-Camera access requires a secure context or localhost. If no camera is available, the app still shows the 3D scene and upload controls, while gesture control is disabled.
-
-## Build
-
-```bash
-npm run build
-```
-
-## Implementation Notes
-
-The app models visual elements as particles with shared update behavior. Each particle owns a mesh, current position, target position, velocity, and mode-specific parameters. The scene state switches between `CAKE`, `SCATTER`, and `FOCUS`, while particles interpolate toward their current target positions to keep transitions smooth.
-
-Hand gestures are processed fully in the browser. The left side of the mirrored camera frame is used for mode switching, and the right side is used for photo interaction. Pinch distance between thumb and index finger controls photo focus, while filtered palm movement adds rotational velocity to the gallery.
-
-Uploaded images are compressed through Canvas before being saved to localStorage. This keeps the demo lightweight and avoids server-side storage of personal images.
-
-## Recruiting Summary
-
-This project is best positioned as a small frontend / creative coding project. It demonstrates:
-
-- Translating a user scenario into an interactive product prototype.
-- Building modular browser-side code from a single creative concept.
-- Integrating WebGL rendering with real-time computer vision input.
-- Thinking about privacy and storage boundaries for user-uploaded media.
-
-For non-technical roles such as supply chain, procurement, or operations, this should be treated as a bonus project rather than a core business project. It can support a broader story about digital literacy, structured problem decomposition, and fast prototyping.
+`export:standalone` 会在本地生成 `Cake.html`。照片取自本地 `preset-photos/manifest.json` 所列的压缩图片；要从本地相册制作这些副本，可运行 `python scripts/prepare-preset-photos.py --source "照片文件夹"`。如果将可用音频放在本地 `preset-audio/danxiang.mp3`（或 `.m4a`、`.wav`），打包脚本也会将它嵌入 `Cake.html`。这些私人素材和成品均被 Git 忽略。

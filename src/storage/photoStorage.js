@@ -1,10 +1,10 @@
-import { STORAGE_KEY } from '../config.js';
+const STORAGE_KEY = 'gesture_memory_gallery_photo_selection_v2';
+const LEGACY_KEY = 'gesture_memory_gallery_photos_v1';
+const MAX_IMAGE_SIZE = 720;
+const JPEG_QUALITY = 0.78;
 
-const MAX_IMAGE_SIZE = 512;
-const JPEG_QUALITY = 0.72;
-
-export async function compressImageToDataUrl(fileOrDataUrl) {
-  const source = typeof fileOrDataUrl === 'string' ? fileOrDataUrl : await readFileAsDataUrl(fileOrDataUrl);
+export async function compressImageToDataUrl(file) {
+  const source = await readFileAsDataUrl(file);
   const image = await loadImage(source);
   const scale = Math.min(MAX_IMAGE_SIZE / image.width, MAX_IMAGE_SIZE / image.height, 1);
   const canvas = document.createElement('canvas');
@@ -15,22 +15,32 @@ export async function compressImageToDataUrl(fileOrDataUrl) {
   return canvas.toDataURL('image/jpeg', JPEG_QUALITY);
 }
 
-export function loadSavedPhotos() {
+export function loadPhotoSelection(scope) {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const stored = localStorage.getItem(`${STORAGE_KEY}:${scope}`);
+    if (stored) {
+      const state = JSON.parse(stored);
+      return {
+        hidePresets: state.hidePresets === true,
+        added: Array.isArray(state.added) ? state.added.filter(isImageDataUrl) : []
+      };
+    }
+    const legacy = scope.endsWith('/Cake.html')
+      ? JSON.parse(localStorage.getItem(LEGACY_KEY) || '[]')
+      : [];
+    return { hidePresets: false, added: Array.isArray(legacy) ? legacy.filter(isImageDataUrl) : [] };
   } catch {
-    return [];
+    return { hidePresets: false, added: [] };
   }
 }
 
-export function savePhoto(dataUrl) {
-  const saved = loadSavedPhotos();
-  saved.push(dataUrl);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+export function savePhotoSelection(selection, scope) {
+  localStorage.setItem(`${STORAGE_KEY}:${scope}`, JSON.stringify(selection));
+  localStorage.removeItem(LEGACY_KEY);
 }
 
-export function clearSavedPhotos() {
-  localStorage.removeItem(STORAGE_KEY);
+export function isImageDataUrl(value) {
+  return typeof value === 'string' && /^data:image\/(jpeg|png|webp|gif);base64,/i.test(value);
 }
 
 function readFileAsDataUrl(file) {

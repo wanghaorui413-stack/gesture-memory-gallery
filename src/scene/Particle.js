@@ -8,11 +8,15 @@ export class Particle {
     this.index = index;
     this.currentPos = new THREE.Vector3();
     this.targetPos = new THREE.Vector3();
+    this.targetScale = new THREE.Vector3(1, 1, 1);
+    this.parentQuaternion = new THREE.Quaternion();
     this.velocity = new THREE.Vector3((Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.08);
     this.cakeParams = {
       t: Math.random(),
-      angle: type === 'PHOTO' ? (index / totalPhotos) * Math.PI * 2 : Math.random() * Math.PI * 2,
-      flickerOffset: Math.random() * 100
+      angle: type === 'PHOTO' ? (index / totalPhotos) * Math.PI * 2 :
+        (type === 'CANDLE' || type === 'FLAME' ? (index / 9) * Math.PI * 2 : Math.random() * Math.PI * 2),
+      flickerOffset: Math.random() * 100,
+      radiusOffset: (Math.random() - 0.5) * 0.45
     };
 
     this.scatterPos = new THREE.Vector3(
@@ -31,12 +35,12 @@ export class Particle {
       this.mesh.rotation.x += this.velocity.x;
       this.mesh.rotation.y += this.velocity.y;
     } else if (mode === MODES.FOCUS) {
-      this.updateFocusTarget(mainGroup, camera);
+      this.updateFocusTarget(time, mainGroup, camera);
     }
 
-    this.currentPos.lerp(this.targetPos, 0.08);
+    this.currentPos.lerp(this.targetPos, 0.12);
     this.mesh.position.copy(this.currentPos);
-    this.mesh.scale.lerp(this.getTargetScale(mode, time), 0.1);
+    this.mesh.scale.lerp(this.getTargetScale(mode, time), 0.14);
   }
 
   updateCakeTarget(time) {
@@ -78,7 +82,7 @@ export class Particle {
       y = 2;
       radius = 8.5;
     } else {
-      radius += (Math.random() - 0.5) * 1.5;
+      radius += this.cakeParams.radiusOffset;
     }
 
     const angle = this.cakeParams.angle + (this.type !== 'PHOTO' ? t * 8 : 0);
@@ -88,26 +92,33 @@ export class Particle {
     if (this.type === 'HEART') this.mesh.rotation.z = Math.sin(time + this.index) * 0.2;
   }
 
-  updateFocusTarget(mainGroup, camera) {
+  updateFocusTarget(time, mainGroup, camera) {
     if (this.type === 'PHOTO' && this.index === sceneState.focusTargetIndex) {
-      const worldTarget = new THREE.Vector3(0, 5, 38);
+      const worldTarget = new THREE.Vector3(0, 5, camera.position.z - 16);
       this.targetPos.copy(worldTarget).applyMatrix4(mainGroup.matrixWorld.clone().invert());
-      this.mesh.quaternion.copy(camera.quaternion);
+      this.mesh.quaternion.copy(mainGroup.getWorldQuaternion(this.parentQuaternion).invert()).multiply(camera.quaternion);
       return;
     }
 
     this.targetPos.copy(this.scatterPos);
     this.targetPos.z -= 10;
     this.targetPos.multiplyScalar(1.5);
+    const phase = time * 1.1 + this.index * 0.37;
+    this.targetPos.x += Math.sin(phase) * 0.75;
+    this.targetPos.y += Math.cos(phase * 0.8) * 0.65;
+    this.mesh.rotation.y += 0.004;
   }
 
   getTargetScale(mode, time) {
-    const scale = new THREE.Vector3(1, 1, 1);
+    const scale = this.targetScale.set(1, 1, 1);
     if (this.type === 'PHOTO') {
-      if (mode === MODES.FOCUS && this.index === sceneState.focusTargetIndex) scale.set(5, 5, 5);
-      else if (mode === MODES.CAKE) scale.set(0.6, 0.6, 0.6);
-      else if (mode === MODES.SCATTER) scale.set(2, 2, 2);
-      else scale.set(1.5, 1.5, 1.5);
+      if (mode === MODES.FOCUS && this.index === sceneState.focusTargetIndex) {
+        const focusedScale = window.innerWidth < 720 ? 2.3 : 3.7;
+        scale.set(focusedScale, focusedScale, focusedScale);
+      }
+      else if (mode === MODES.CAKE) scale.setScalar(this.index === sceneState.hoverTargetIndex ? 0.82 : 0.6);
+      else if (mode === MODES.SCATTER) scale.setScalar(this.index === sceneState.hoverTargetIndex ? 2.35 : 2);
+      else scale.setScalar(0.9);
       return scale;
     }
 
@@ -115,6 +126,7 @@ export class Particle {
     if (this.type === 'CONFETTI') value = 0.3;
     if (this.type === 'FLAME') value = 0.5 + Math.sin(time * 20) * 0.1;
     if (this.type === 'HEART') value = 0.8;
+    if (mode === MODES.FOCUS) value *= 0.68;
     scale.set(value, value, value);
     return scale;
   }

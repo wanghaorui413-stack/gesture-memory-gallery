@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 const distIndexPath = resolve(root, 'dist', 'index.html');
 const standalonePath = resolve(root, 'Cake.html');
+const presetDir = resolve(root, 'preset-photos');
 
 let html = await readFile(distIndexPath, 'utf8');
 
@@ -19,10 +20,39 @@ const stylePath = resolve(root, 'dist', styleMatch[1].replace(/^\//, ''));
 const [script, style] = await Promise.all([readFile(scriptPath, 'utf8'), readFile(stylePath, 'utf8')]);
 const inlineSafeScript = script.replace(/<\/script/gi, '<\\/script');
 
+let presetFiles = [];
+try {
+  presetFiles = JSON.parse(await readFile(resolve(presetDir, 'manifest.json'), 'utf8'));
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+}
+if (!Array.isArray(presetFiles) || presetFiles.some(name => !/^\d{2}\.jpg$/.test(name))) {
+  throw new Error('Invalid preset-photos/manifest.json');
+}
+const presetPhotos = await Promise.all(presetFiles.map(async name =>
+  `data:image/jpeg;base64,${(await readFile(resolve(presetDir, name))).toString('base64')}`
+));
+
+let presetAudio = { name: '周童《淡想》', dataUrl: '' };
+for (const extension of ['mp3', 'm4a', 'wav']) {
+  try {
+    const audio = await readFile(resolve(root, 'preset-audio', `danxiang.${extension}`));
+    const mime = { mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav' }[extension];
+    presetAudio = { name: '周童《淡想》', dataUrl: `data:${mime};base64,${audio.toString('base64')}` };
+    break;
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+}
+
 html = html
   .replace(/\s*<script>\s*if \(window\.location\.protocol === 'file:'\) \{\s*window\.location\.replace\(new URL\('Cake\.html', window\.location\.href\)\.href\);\s*\}\s*<\/script>/, '')
   .replace(styleMatch[0], `<style>\n${style}\n</style>`)
   .replace(scriptMatch[0], '')
+  .replace('<script id="gift-data" type="application/json">[]</script>',
+    `<script id="gift-data" type="application/json">${JSON.stringify(presetPhotos)}</script>`)
+  .replace('<script id="gift-audio" type="application/json">{}</script>',
+    `<script id="gift-audio" type="application/json">${JSON.stringify(presetAudio)}</script>`)
   .replace('</body>', () => `    <script>\n${inlineSafeScript}\n    </script>\n  </body>`);
 
 html = html.replace(
@@ -31,4 +61,4 @@ html = html.replace(
 );
 
 await writeFile(standalonePath, html, 'utf8');
-console.log(`Wrote ${standalonePath}`);
+console.log(`Wrote ${standalonePath} with ${presetPhotos.length} preset photos${presetAudio.dataUrl ? ' and music' : ''}`);

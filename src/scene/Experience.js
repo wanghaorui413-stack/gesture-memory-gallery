@@ -12,6 +12,11 @@ export class Experience {
     this.container = container;
     this.particles = [];
     this.photos = [];
+    this.hasRealPhotos = false;
+    this.photoGeneration = 0;
+    this.photoLoadOrder = 0;
+    this.nextPhotoOrder = 0;
+    this.pendingPhotos = new Map();
     this.clock = new THREE.Clock();
 
     this.initRenderer();
@@ -24,22 +29,23 @@ export class Experience {
 
   initRenderer() {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 720 ? 1.3 : 1.75));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = THREE.ReinhardToneMapping;
-    this.renderer.toneMappingExposure = 2;
+    this.renderer.toneMappingExposure = 1.65;
     this.container.appendChild(this.renderer.domElement);
 
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    this.camera.position.set(0, 5, 50);
+    this.camera.position.set(0, 5, window.innerWidth < 720 ? 68 : 50);
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x050505);
+    this.scene.background = new THREE.Color(0x120b1d);
     const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
     this.mainGroup = new THREE.Group();
     this.scene.add(this.mainGroup);
+    this.renderer.domElement.style.touchAction = 'none';
   }
 
   initLighting() {
@@ -64,7 +70,7 @@ export class Experience {
   initPostProcessing() {
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.6, 0.4, 0.85);
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.52, 0.38, 0.88);
     this.composer.addPass(this.bloomPass);
     this.composer.addPass(new OutputPass());
   }
@@ -91,7 +97,7 @@ export class Experience {
     const flameGeo = new THREE.SphereGeometry(0.15, 8, 8);
     const confettiGeo = new THREE.PlaneGeometry(0.2, 0.4);
 
-    for (let i = 0; i < 2800; i += 1) {
+    for (let i = 0; i < 700; i += 1) {
       const rand = Math.random();
       let mesh;
       let type;
@@ -110,7 +116,7 @@ export class Experience {
       this.particles.push(new Particle(mesh, type, i));
     }
 
-    for (let i = 0; i < 24; i += 1) {
+    for (let i = 0; i < 9; i += 1) {
       const candle = new THREE.Mesh(candleGeo, this.materials.candle);
       const flame = new THREE.Mesh(flameGeo, this.materials.flame);
       this.mainGroup.add(candle, flame);
@@ -119,7 +125,7 @@ export class Experience {
     }
 
     const colors = [0xff2048, 0x25d0b0, 0x4c84ff, 0xffd700, 0xff69b4, 0xffffff];
-    for (let i = 0; i < 2200; i += 1) {
+    for (let i = 0; i < 250; i += 1) {
       const material = new THREE.MeshBasicMaterial({
         color: colors[Math.floor(Math.random() * colors.length)],
         side: THREE.DoubleSide
@@ -128,6 +134,64 @@ export class Experience {
       this.mainGroup.add(mesh);
       this.particles.push(new Particle(mesh, 'CONFETTI', i));
     }
+    this.createCakeStructure();
+    this.createStarfield();
+  }
+
+  createCakeStructure() {
+    this.cakeStructure = new THREE.Group();
+    this.mainGroup.add(this.cakeStructure);
+    const pink = new THREE.MeshPhysicalMaterial({ color: 0xff98bc, roughness: 0.27, clearcoat: 0.75 });
+    const cream = new THREE.MeshPhysicalMaterial({ color: 0xfff0dc, roughness: 0.35, clearcoat: 0.45 });
+    const berry = new THREE.MeshPhysicalMaterial({ color: 0x9e255c, roughness: 0.3, clearcoat: 0.8 });
+    const gold = this.materials.frame;
+    const tiers = [
+      { radius: 10, height: 7.4, y: -6.1, material: cream },
+      { radius: 7, height: 5.6, y: 0.5, material: pink },
+      { radius: 4.2, height: 3.9, y: 5.2, material: cream }
+    ];
+    for (const tier of tiers) {
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(tier.radius, tier.radius, tier.height, 64), tier.material);
+      body.position.y = tier.y;
+      this.cakeStructure.add(body);
+      for (const y of [tier.y - tier.height / 2 + 0.2, tier.y + tier.height / 2 - 0.2]) {
+        const piping = new THREE.Mesh(new THREE.TorusGeometry(tier.radius - 0.1, 0.25, 12, 72), gold);
+        piping.rotation.x = Math.PI / 2;
+        piping.position.y = y;
+        this.cakeStructure.add(piping);
+      }
+      const top = tier.y + tier.height / 2;
+      for (let j = 0; j < Math.round(tier.radius * 3); j += 1) {
+        const angle = (j / Math.round(tier.radius * 3)) * Math.PI * 2;
+        const pearl = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 10), j % 3 ? cream : berry);
+        pearl.position.set(Math.cos(angle) * (tier.radius - 0.35), top + 0.14, Math.sin(angle) * (tier.radius - 0.35));
+        this.cakeStructure.add(pearl);
+      }
+    }
+    const plate = new THREE.Mesh(new THREE.CylinderGeometry(11.6, 11.9, 0.45, 72), gold);
+    plate.position.y = -10.1;
+    this.cakeStructure.add(plate);
+    const topper = new THREE.Mesh(this.createHeartGeometry(), this.materials.heartPink);
+    topper.scale.setScalar(2.1);
+    topper.position.set(0, 10.8, 0);
+    this.cakeStructure.add(topper);
+  }
+
+  createStarfield() {
+    const positions = new Float32Array(360 * 3);
+    for (let i = 0; i < 360; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 29 + Math.random() * 30;
+      positions[i * 3] = Math.cos(angle) * radius;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 62;
+      positions[i * 3 + 2] = Math.sin(angle) * radius - 8;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    this.starfield = new THREE.Points(geometry, new THREE.PointsMaterial({
+      color: 0xffd9a8, size: 0.24, transparent: true, opacity: 0.75
+    }));
+    this.scene.add(this.starfield);
   }
 
   createHeartGeometry() {
@@ -143,25 +207,105 @@ export class Experience {
     const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.2, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.05, bevelThickness: 0.05 });
     geometry.center();
     geometry.scale(1.6, 1.6, 1.6);
+    // The original path has its pointed tip at +Y, which put the cake topper upside down.
+    geometry.rotateZ(Math.PI);
     return geometry;
   }
 
-  addPhotoTexture(texture) {
+  addPhotoTexture(texture, placeholder = false) {
+    if (!placeholder && !this.hasRealPhotos) {
+      this.photos.filter(photo => photo.placeholder).forEach(photo => {
+        this.mainGroup.remove(photo.mesh);
+        this.particles.splice(this.particles.indexOf(photo), 1);
+      });
+      this.photos = this.photos.filter(photo => !photo.placeholder);
+      this.hasRealPhotos = true;
+    }
     texture.colorSpace = THREE.SRGBColorSpace;
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.2, 0.15), this.materials.frame);
-    const photo = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ map: texture }));
+    const image = texture.image;
+    const ratio = image?.width && image?.height ? image.width / image.height : 1;
+    const width = ratio >= 1 ? 2.3 : 2.3 * ratio;
+    const height = ratio <= 1 ? 2.3 : 2.3 / ratio;
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(width + 0.2, height + 0.2, 0.15), this.materials.frame);
+    const photo = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }));
     photo.position.z = 0.08;
     frame.add(photo);
     this.mainGroup.add(frame);
 
     const particle = new Particle(frame, 'PHOTO', this.photos.length, this.photos.length + 1);
+    particle.placeholder = placeholder;
     this.particles.push(particle);
     this.photos.push(particle);
     this.rebalancePhotoAngles();
   }
 
   addPhotoFromDataUrl(dataUrl) {
-    new THREE.TextureLoader().load(dataUrl, texture => this.addPhotoTexture(texture));
+    const generation = this.photoGeneration;
+    const order = this.photoLoadOrder++;
+    const flush = () => {
+      while (this.pendingPhotos.has(this.nextPhotoOrder)) {
+        const loaded = this.pendingPhotos.get(this.nextPhotoOrder);
+        this.pendingPhotos.delete(this.nextPhotoOrder++);
+        if (loaded) this.addPhotoTexture(loaded);
+      }
+    };
+    new THREE.TextureLoader().load(dataUrl, texture => {
+      if (generation !== this.photoGeneration) {
+        texture.dispose();
+        return;
+      }
+      this.pendingPhotos.set(order, texture);
+      flush();
+    }, undefined, () => {
+      if (generation === this.photoGeneration) {
+        this.pendingPhotos.set(order, null);
+        flush();
+      }
+    });
+  }
+
+  clearPhotos() {
+    this.photoGeneration += 1;
+    this.photoLoadOrder = 0;
+    this.nextPhotoOrder = 0;
+    for (const texture of this.pendingPhotos.values()) texture?.dispose();
+    this.pendingPhotos.clear();
+    for (const particle of this.photos) {
+      this.mainGroup.remove(particle.mesh);
+      particle.mesh.geometry.dispose();
+      for (const child of particle.mesh.children) {
+        child.material.map?.dispose();
+        child.material.dispose();
+        child.geometry.dispose();
+      }
+    }
+    this.particles = this.particles.filter(particle => particle.type !== 'PHOTO');
+    this.photos = [];
+    this.hasRealPhotos = false;
+    sceneState.focusTargetIndex = -1;
+    sceneState.hoverTargetIndex = -1;
+    if (sceneState.mode === MODES.FOCUS) sceneState.mode = sceneState.baseMode;
+  }
+
+  getPhotoNearScreenPoint(x, y) {
+    if (!this.photos.length) return -1;
+    let bestIndex = -1;
+    let bestScore = Infinity;
+    const point = new THREE.Vector3();
+    this.photos.forEach((photo, index) => {
+      photo.mesh.getWorldPosition(point);
+      if (sceneState.mode === MODES.CAKE && point.z < -1.5) return;
+      point.project(this.camera);
+      if (point.z < -1 || point.z > 1) return;
+      const sx = (point.x + 1) / 2;
+      const sy = (1 - point.y) / 2;
+      const score = (sx - x) ** 2 + (sy - y) ** 2;
+      if (score < bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+    return bestScore < 0.09 ? bestIndex : -1;
   }
 
   createPlaceholderPhoto(label = 'MEMORY') {
@@ -180,7 +324,7 @@ export class Experience {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, 256, 256);
-    this.addPhotoTexture(new THREE.CanvasTexture(canvas));
+    this.addPhotoTexture(new THREE.CanvasTexture(canvas), true);
   }
 
   rebalancePhotoAngles() {
@@ -214,7 +358,9 @@ export class Experience {
   bindResize() {
     window.addEventListener('resize', () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.position.z = window.innerWidth < 720 ? 68 : 50;
       this.camera.updateProjectionMatrix();
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 720 ? 1.3 : 1.75));
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       this.composer.setSize(window.innerWidth, window.innerHeight);
     });
@@ -229,7 +375,13 @@ export class Experience {
     requestAnimationFrame(() => this.animate());
     const time = this.clock.getElapsedTime();
     this.updateRotation();
+    this.mainGroup.updateWorldMatrix(true, false);
     this.particles.forEach(particle => particle.update(sceneState.mode, time, this.mainGroup, this.camera));
+    const structureScale = sceneState.mode === MODES.CAKE ? 1 : 0.001;
+    this.cakeStructure.scale.lerp(new THREE.Vector3(structureScale, structureScale, structureScale), 0.18);
+    this.starfield.rotation.y = Math.sin(time * 0.08) * 0.12;
+    this.starfield.rotation.z = Math.sin(time * 0.11) * 0.035;
+    this.starfield.material.opacity = 0.62 + Math.sin(time * (sceneState.mode === MODES.FOCUS ? 2.4 : 0.9)) * 0.19;
     this.composer.render();
   }
 

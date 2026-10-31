@@ -9,3 +9,13 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Personal gift content stays on the local computer.
+preset-photos/
+preset-audio/
+Cake.html
+送给妹妹*.html
+制作礼物.html
+制作说明.txt
+生日蛋糕-制作包/
+生日蛋糕-*.zip
