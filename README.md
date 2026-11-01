@@ -8,9 +8,15 @@
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 
 <p align="center">
-  <img src="docs/assets/preview-desktop.png" width="72%" alt="桌面端预览" />
-  <img src="docs/assets/preview-mobile.png" width="20%" alt="手机端预览" />
+  <img src="docs/assets/preview-desktop.png" width="72%" alt="桌面端：粒子蛋糕主场景" />
+  <img src="docs/assets/preview-mobile.png" width="20%" alt="手机端：粒子蛋糕主场景" />
 </p>
+
+| ✨ 星光：照片散开 | 💗 看照片：聚焦单张 | ▦ 总览：一次看全部 |
+| --- | --- | --- |
+| ![星光模式](docs/assets/preview-scatter.jpg) | ![看照片模式](docs/assets/preview-focus.jpg) | ![照片总览](docs/assets/preview-overview.jpg) |
+
+<sub>截图中的照片为示意图，真实照片只保存在本地。</sub>
 
 ## 为什么做
 
